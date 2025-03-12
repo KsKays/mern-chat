@@ -3,6 +3,7 @@ import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
 //import cloudinary from "../lib/cloudinary";
 
+// Create Sign UP
 //export แบบนี้ต้องไปเรียกใช้เป็น { signup }
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body; // fullName, email, password รับค่าจาก body
@@ -46,46 +47,34 @@ export const signup = async (req, res) => {
   } // ถ้ามี error ให้ return 500 และข้อความว่า Internal server error
 };
 
+// Create Sign In
 export const signin = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: "Email or Password is missing" });
   }
-
-  try {
+try {
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(400).json({ message: "User not found" });
+      return res.status(404).json({ message: "Email not found!" });
     }
+
     const isPasswordMatched = await bcrypt.compare(password, user.password);
     if (!isPasswordMatched) {
-      res.status(401).send({
-        message: "Invalid credentials!",
-      });
-      return;
+      return res.status(401).json({ message: "Invalid credentials" });
     }
 
-    //login success
-    jwt.sign({ email: user.email, id: user._id }, secret, {}, (err, token) => {
-      if (err)
-        return res.status(500).send({
-          message: "Internal server error: Authentication Failed!",
-        });
-      //token generated
-      res.send({
-        message: "User logged in successfully",
-        id: user._id,
-        email: user.email,
-        accessToken: token,
-      });
+    const token = await generateToken(user._id, res);
+    res.status(201).json({
+      _id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      profilePic: user.profilePic,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error while logging in a user" });
+    res.status(500).json({ message: "Internal server error While signing in" });
   }
 };
-
 export const logout = async (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });
