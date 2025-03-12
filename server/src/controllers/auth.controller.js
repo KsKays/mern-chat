@@ -1,25 +1,22 @@
 import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
-//import cloudinary from "../lib/cloudinary";
 
-// Create Sign UP
-//export แบบนี้ต้องไปเรียกใช้เป็น { signup }
+//Create Sign Up
 export const signup = async (req, res) => {
-  const { fullName, email, password } = req.body; // fullName, email, password รับค่าจาก body
+  const { fullName, email, password } = req.body;
   if (!fullName || !email || !password) {
     return res.status(400).json({ message: "All fields are required" });
-  } // ถ้าไม่มีข้อมูลให้ return 400 และข้อความว่า All fields are required
+  }
 
   try {
     const user = await User.findOne({ email });
     if (user) {
       return res.status(400).json({ message: "User already exists" });
-    } // ถ้ามี user อยู่แล้วให้ return 400 และข้อความว่า User already exists
+    }
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt); // เข้ารหัสทางเดียว hash password ด้วย bcrypt
+    const hashedPassword = await bcrypt.hash(password, salt);
 
-    // สร้าง user ใหม่
     const newUser = await User({
       fullName,
       email,
@@ -30,30 +27,29 @@ export const signup = async (req, res) => {
       const token = await generateToken(newUser._id, res);
       console.log("TOKEN", token);
 
-      await newUser.save(); // บันทึก user ใหม่
+      await newUser.save();
       res.status(201).json({
         _id: newUser._id,
         fullName: newUser.fullName,
         email: newUser.email,
         profilePic: newUser.profilePic,
-      }); // ถ้าบันทึกสำเร็จให้ return 201(create สำเร็จ)
+      });
     } else {
       res.status(400).json({ message: "Invalid user data" });
-    } // ถ้าไม่สามารถสร้าง user ใหม่ได้ให้ return 400 และข้อความว่า Invalid user data
+    }
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error while registering a new user" });
-  } // ถ้ามี error ให้ return 500 และข้อความว่า Internal server error
+    res.status(500).json({ message: "Internal server error while registering a new user" });
+  }
 };
 
-// Create Sign In
+
+//Create Sign Up
 export const signin = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
     return res.status(400).json({ message: "Email or Password is missing" });
   }
-try {
+  try {
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(404).json({ message: "Email not found!" });
@@ -75,21 +71,22 @@ try {
     res.status(500).json({ message: "Internal server error While signing in" });
   }
 };
+
+
+//Create Logout
 export const logout = async (req, res) => {
   try {
     res.cookie("jwt", "", { maxAge: 0 });
     res.send({ message: "User logged out successfully" });
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Internal server error while logging out" });
+    res.status(500).json({ message: "Internal server error while logging out" });
   }
 };
 
+//Create UpdateProfile
 export const updateProfile = async (req, res) => {
   try {
     const { profilePic } = req.body;
-    // const userId = req.user._id;
     const { id: userId } = req.params;
 
     if (!profilePic) {
