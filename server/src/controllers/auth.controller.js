@@ -1,6 +1,7 @@
 import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcrypt";
+import cloudinary from "../lib/cloudinary.js";
 
 //Create Sign Up
 export const signup = async (req, res) => {
@@ -38,12 +39,13 @@ export const signup = async (req, res) => {
       res.status(400).json({ message: "Invalid user data" });
     }
   } catch (error) {
-    res.status(500).json({ message: "Internal server error while registering a new user" });
+    res
+      .status(500)
+      .json({ message: "Internal server error while registering a new user" });
   }
 };
 
-
-//Create Sign Up
+//Create Sign In
 export const signin = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
@@ -67,11 +69,12 @@ export const signin = async (req, res) => {
       email: user.email,
       profilePic: user.profilePic,
     });
+
+    console.log("TOKEN", token);
   } catch (error) {
     res.status(500).json({ message: "Internal server error While signing in" });
   }
 };
-
 
 //Create Logout
 export const logout = async (req, res) => {
@@ -79,7 +82,9 @@ export const logout = async (req, res) => {
     res.cookie("jwt", "", { maxAge: 0 });
     res.send({ message: "User logged out successfully" });
   } catch (error) {
-    res.status(500).json({ message: "Internal server error while logging out" });
+    res
+      .status(500)
+      .json({ message: "Internal server error while logging out" });
   }
 };
 
@@ -87,7 +92,8 @@ export const logout = async (req, res) => {
 export const updateProfile = async (req, res) => {
   try {
     const { profilePic } = req.body;
-    const { id: userId } = req.params;
+    const userId = req.user._id;
+    // const { id: userId } = req.params;
 
     if (!profilePic) {
       return res.status(400).json({ message: "Profile picture is required" });
@@ -102,11 +108,22 @@ export const updateProfile = async (req, res) => {
       { new: true }
     );
     if (updatedUser) {
-      res.status(200).json({ updatedUser });
+      res.status(200).json(updatedUser);
     } else {
       res.status(500).json({ message: "Error while updating profile picture" });
     }
   } catch (error) {
     res.status(500).json({ message: "Internal server error while updating" });
+  }
+};
+
+//Check token
+export const checkAuth = async (req, res) => {
+  try {
+    res.status(200).json(req.user);
+  } catch (error) {
+    res
+      .status(500)
+      .json({ message: "Internal server error while checking Auth" });
   }
 };
